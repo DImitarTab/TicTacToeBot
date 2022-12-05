@@ -1,0 +1,133 @@
+﻿@model ChessBoxing.Models.GameState
+
+
+<div class="wrapper">
+@if(!Model.GameOver && Model.TurnsPassed!=9){
+    <span class="currPlayer">Current player: @Model.CurrentPlayer</span>
+}
+else if(Model.GameOver && Model.TurnsPassed!=9)
+{
+    <span class="currPlayer">Player @Model.CurrentPlayer won!</span>
+}
+else
+{
+    <span class="currPlayer">The game ended in a tie.</span>
+    
+}
+
+
+ <section class="container-game">
+     @for(int i = 0; i<=8; i++)
+     {
+    
+            if (@Model.Board.Positions[i] != 0)
+            {
+                <div class="tile" data-row=@i >
+                    <div class="playerPositions" >@Model.Board.Positions[i]</div>
+                    <span class="hoverPlayer" >@Model.CurrentPlayer</span>
+                </div>
+            }
+            else
+            {
+                <div class="tile" data-row=@i >
+                    <div class="playerPositions" ></div>
+                    <span class="hoverPlayer">@Model.CurrentPlayer</span>
+                </div>
+
+            }
+       
+    }
+</section>
+<button class="resetButton">RESET</button>
+
+</div>
+
+<script>
+
+    
+
+    Array.from(document.getElementsByClassName("tile")).forEach(x => x.addEventListener("click",
+    function (e) {
+        
+        var gosho = e.target;
+       
+        var hoverElement = gosho.children[1];
+       
+        if(hoverElement){
+        hoverElement.hidden = true;
+
+        }
+
+        var row = gosho.getAttribute("data-row");
+        console.log(row);
+
+
+        $.post('@Url.Action("MakeMove")', {
+            r: row
+
+        }).done(function (d) {
+
+            var obj = JSON.parse(d);
+            console.log(obj);
+
+            if(!obj.legalMove){
+                $(".currPlayer").text("ILLEGAL MOVE. Try again.");
+            }
+            else {
+                var playerPos = gosho.children[0];
+                playerPos.textContent = "X";
+                var boardArray = Array.from(document.getElementsByClassName("playerPositions"));   
+                
+
+                if(obj.pesho.GameOver) {
+                    if( obj.botMove != null ){
+                        var shisho = $("div").find(`[data-row='${obj.botMove}']`)
+                        shisho[0].childNodes[1].textContent = "O";
+                    $(".currPlayer").text("Result: " + obj.pesho.ResultEnd);
+
+                    }
+                    else {
+                    $(".currPlayer").text("Result: " + obj.pesho.ResultEnd);
+
+                    }
+                    
+                }
+                else {
+                    var shisho = $("div").find(`[data-row='${obj.botMove}']`)
+                    shisho[0].childNodes[1].textContent = "O";
+                    console.log(shisho[0].childNodes[3]);
+                    shisho[0].childNodes[3].hidden = true;
+                }
+
+            }
+            
+        })
+    }));
+
+    document.getElementsByClassName("resetButton")[0].addEventListener("click",
+        function (e) {
+
+            var hoverElement = Array.from(document.getElementsByClassName("hoverPlayer"));
+            
+
+            $.post('@Url.Action("ResetBoard")', {})
+            .done(function(d) {
+                var obj = JSON.parse(d);
+                var boardArray = Array.from(document.getElementsByClassName("playerPositions"));
+                hoverElement.forEach(function(currentEl, i){
+                    hoverElement[i].hidden = false;
+                });
+                
+                boardArray.forEach(function(currentElement, index){             
+                        boardArray[index].textContent = "";
+                       
+                })
+                 $(".currPlayer").text("Player X make your move");
+                
+            })
+        }
+        );
+
+
+    
+</script>
